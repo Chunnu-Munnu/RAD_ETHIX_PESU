@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>RAD-ETHIX — Ethical X-ray AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-mode">
+  <div class="theme-toggle" id="themeToggle" title="Switch theme"></div>
+  <div class="container">
+
+    <div id="mascot" class="mascot-container">
+  <!-- Neon Stick-Figure Elephant SVG replaced with jago.jpg -->
+  <img src="JAGO .jpg" alt="Jago Mascot" width="80" height="80">
+  <div class="mascot-tagline">RAD-ETHIX</div>
+  <div class="mascot-tagline">RADIOLOGY THE ETHICAL WAY</div>
+</div>
+
+
+    <main>
+      <!-- Upload Section -->
+      <section id="homepage" class="section active">
+        <div class="intro-content card">
+          <h2>Upload your Chest X-ray</h2>
+          <p class="description">
+            AI analysis with confidence heatmap.<br>
+            <strong>Supports: JPG, PNG, DICOM</strong>
+          </p>
+        </div>
+        <div class="upload-container">
+          <div id="uploadArea" class="upload-area" tabindex="0">
+            <div class="upload-icon">📤</div>
+            <h3>Click or drag to upload</h3>
+            <p>Powered by Jago. All uploads are confidential.</p>
+            <input type="file" id="fileInput" accept="image/*,.dcm" style="display:none" />
+            <p class="file-types">Supported: JPG, PNG, DICOM</p>
+          </div>
+          <div id="uploadProgress" class="upload-progress" style="display:none;">
+            <div class="progress-bar">
+              <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <div id="progressText">Uploading... 0%</div>
+          </div>
+          <div id="imagePreview" class="image-preview card" style="display:none;">
+            <img id="previewImage" />
+            <img id="heatmapOverlay" class="heatmap-overlay" />
+            <div class="preview-actions">
+              <button class="btn btn--outline" id="resetButton">Remove</button>
+              <button class="btn btn--primary" id="analyzeButton">Analyze X-ray</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Results Section -->
+      <section id="results" class="section" style="display:none;">
+        <div class="results-container card">
+          <div class="image-preview active" id="imagePreviewResults">
+            <img id="previewImageResults"/>
+            <img id="heatmapOverlayResults" class="heatmap-overlay"/>
+          </div>
+          <div class="mascot-results">
+            <div class="analysis-speech">
+              <div class="confidence-score">
+                <span class="confidence-label">AI Confidence</span>
+                <span id="confidenceValue" class="confidence-value"></span>
+              </div>
+              <div class="diagnosis-result">
+                <h3 id="diagnosisTitle"></h3>
+                <p id="diagnosisDescription"></p>
+              </div>
+              <div class="disclaimer"><small>AI interpretation. Confirm with a doctor for all final decisions.</small></div>
+            </div>
+            <div id="findingsGrid" class="features-grid"></div>
+            <button class="btn btn--primary" id="contactDoctorsBtn" style="margin-top:16px;">Contact PES Doctors</button>
+          </div>
+          <!-- Doctor Contact Modal -->
+          <div class="modal" id="doctorsModal" style="display:none;">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h3>PES University - Ecity Specialist Doctors</h3>
+                <button class="modal-close" id="closeDoctorsBtn">&times;</button>
+              </div>
+              <div class="modal-body">
+                <div id="doctorsGrid" class="doctors-grid"></div>
+                <div class="modal-footer">
+                  <small>Online consultation fee: ₹<span id="consultationFee"></span></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <div id="toast" class="toast"><span id="toastMessage"></span></div>
+  </div>
+  <div class="stars"></div>
+  <div class="twinkling"></div>
+  <script src="app.js"></script>
+</body>
+</html>

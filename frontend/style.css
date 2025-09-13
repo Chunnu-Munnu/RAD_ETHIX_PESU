@@ -1,0 +1,74 @@
+body {
+  font-family: 'Montserrat', Arial, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  background: #101a2b;
+  color: #eaf6fd;
+  overflow-x: hidden;
+  transition: background 0.3s, color 0.3s;
+}
+body.light-mode {
+  background: #fafcff;
+  color: #152d4a;
+}
+body.light-mode .container,
+body.light-mode .card {
+  background: #fff !important;
+  color: #152d4a !important;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.07);
+}
+body.dark-mode .container,
+body.dark-mode .card {
+  background: rgba(25,40,66,0.85);
+  color: #eaf6fd;
+  box-shadow: 0 2px 12px 0 rgba(0,255,255,0.14);
+}
+.container { max-width: 780px; margin: 32px auto; padding: 30px 24px 48px 24px; border-radius: 12px; position: relative; z-index: 10 }
+.card { border-radius: 10px; box-shadow: 0 2px 12px 0 rgba(0,255,255,0.14); background: rgba(25,40,66,0.85); margin-bottom: 14px; padding: 24px 16px }
+.stars, .twinkling { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 0; }
+.stars { background: url('https://www.transparenttextures.com/patterns/stardust.png') repeat top center; opacity: 0.9 }
+.twinkling { background: url('https://www.transparenttextures.com/patterns/noise.png') repeat top center; opacity: 0.25 }
+
+.mascot-container { text-align: center; margin-bottom: 12px; position: relative; z-index: 2 }
+#jago-svg { filter: drop-shadow(0 0 12px #29ffe6) drop-shadow(0 0 22px #20324e); margin-bottom: 6px }
+.mascot-tagline { font-family: 'Orbitron', sans-serif; font-size: 1.19rem; letter-spacing: 2px; color: #29ffe6; text-shadow: 0 1px 6px #29ffe699 }
+.intro-content h2 { font-family: 'Orbitron', 'Montserrat', sans-serif; font-size: 2rem; color: #29ffe6; letter-spacing: 1.2px; margin-bottom: 8px }
+.upload-area { border: 2px dashed #29ffe6; background: rgba(32,50,80,0.38); color: #fff; border-radius: 10px; padding: 28px 15px; text-align: center; cursor: pointer; margin-bottom: 10px }
+.upload-area:hover, .upload-area:focus { border-color: #fff; background: rgba(32,50,80,0.42) }
+.upload-icon { font-size: 2.3rem; margin-bottom: 6px }
+.file-types { font-size: .98rem; color: #eaf6fd95 }
+.upload-progress { background: rgba(32,50,80,0.16); border-radius: 8px; margin: 12px 0; padding: 10px }
+.progress-bar { background: #20324e; height: 7px; border-radius: 5px; margin-bottom: 4px; overflow: hidden }
+.progress-fill { height: 7px; border-radius: 5px; background: linear-gradient(90deg,#29ffe6,#1471c4,#fff 80%); width: 0%; transition: width .35s }
+.image-preview { position: relative; margin-top: 8px; padding: 9px; text-align: center; background: #081d30; border-radius: 8px }
+.image-preview img, .heatmap-overlay { max-width: 260px; max-height: 260px; display: block; margin: 8px auto; border-radius: 8px; box-shadow: 0 2px 18px #29ffe68c; background: #14244a }
+.heatmap-overlay { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); opacity: .78; pointer-events: none }
+.preview-actions { display: flex; justify-content: center; gap: 8px; margin-top: 13px }
+.btn { padding: 9px 17px; border-radius: 5px; font-size: 1.02rem; cursor: pointer; border: none; font-family: inherit; transition: background .22s, color .22s }
+.btn--primary { background: #29ffe6; color: #152d4a; font-weight: 700 }
+.btn--outline { background: transparent; border: 2px solid #29ffe6; color: #29ffe6 }
+.btn--primary:hover { background: #1471c4; color: #fff }
+.btn--outline:hover { background: #29ffe6; color: #152d4a }
+.confidence-score { margin-bottom: 10px; font-size: 1.2rem }
+.confidence-value { color: #29ffe6; font-size: 1.4rem; font-weight: bold; margin-left: 8px }
+.diagnosis-result h3 { color: #29ffe6; font-size: 1.2rem; margin: 2px 0 4px 0 }
+.diagnosis-result p { color: #eee; font-size: 1.08rem; margin: 0 0 8px 0 }
+.features-grid { display: flex; flex-direction: column; gap: 7px; margin-top: 16px }
+.feature-card { background: #1a2e53; border-left: 5px solid #29ffe6; padding: 12px 13px 10px 13px; border-radius: 8px; color: #eaf6fd; box-shadow: 0 2px 8px #29ffe63a; text-align: left }
+.feature-title { color: #29ffe6; font-weight: bold; font-size: 1.01rem }
+.feature-desc { font-size: .97rem; margin-bottom: 4px }
+.modal { position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(18,28,42,0.98); display: flex; align-items: center; justify-content: center; z-index: 50; backdrop-filter: blur(4px); transition: opacity .2s }
+.modal-content { background: #102040; padding: 28px; border-radius: 13px; box-shadow: 0 0 16px #29ffe6c9; min-width: 350px; max-width: 420px }
+.modal-header { display: flex; justify-content: space-between; align-items: center }
+.modal-close { background: transparent; color: #29ffe6; font-size: 1.5rem; border: none; cursor: pointer }
+.modal-body { margin-top: 18px }
+.doctors-grid { display: flex; flex-direction: column; gap: 17px; margin-bottom: 13px }
+.doctor-card { background: rgba(25,40,66,0.92); border-left: 4px solid #29ffe6; border-radius: 8px; padding: 13px 14px; color: #f4f8fa; box-shadow: 0 1px 7px #29ffe628 }
+.doctor-title { font-weight: bold; color: #29ffe6; font-size: 1.09rem }
+.doctor-desc { font-size: 0.98rem; margin-bottom: 3px }
+.doctor-contact { color: #fff; font-size: 0.95rem }
+.modal-footer { text-align: right; color: #29ffe6; font-size: 1rem }
+.theme-toggle { position: fixed; top: 20px; right: 26px; z-index: 30; width: 38px; height: 38px; background: radial-gradient(circle at 65% 25%, #29ffe6 56%, transparent 70%), radial-gradient(circle at 35% 70%, #1471c4 36%, transparent 64%); border-radius: 100%; box-shadow: 0 0 10px #29ffe6b2, 0 0 18px #183e6e; cursor: pointer; transition: filter 0.15s }
+.theme-toggle:active {filter: brightness(0.97);}
+.toast { position: fixed; bottom: 19px; left: 50%; transform: translateX(-50%); z-index: 100; background: #183e6e; color: #fff; padding: 13px 30px; border-radius: 15px; font-size: 1.1rem; box-shadow: 0 2px 16px #29ffe666; opacity: 0; transition: opacity 0.35s; pointer-events: none }
+.toast.show { opacity: 1; pointer-events: all }
