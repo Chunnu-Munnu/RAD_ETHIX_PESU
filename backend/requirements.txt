@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+torch
+torchvision
+torchxrayvision
+numpy
+opencv-python
+pandas
+pillow
+scikit-image
+seaborn
+matplotlib
