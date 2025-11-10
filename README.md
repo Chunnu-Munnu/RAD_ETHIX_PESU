@@ -53,7 +53,8 @@ RAD-ETHIX solves this by offering:
 ---
 
 ## 🧠 Model & Training
-- **Architecture**: DenseNet121 (multi-label classification)  
+- **Architecture**: DenseNet121 (multi-label classification) Resnet, Efficientnet ensemble
+- **RAG Pipeline**: Ingested medical Literature to prevent hallucination while report generation.
 - **Training**: CheXpert via TorchXRayVision  
 - **Inference**: Optimized REST API with low latency  
 
