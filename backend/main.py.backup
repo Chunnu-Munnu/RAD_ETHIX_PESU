@@ -34,7 +34,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",
+        "http://localhost:3000", 
         "http://127.0.0.1:3000",
         "http://localhost:8000",
         "http://127.0.0.1:8000",
@@ -138,7 +138,7 @@ MEDICAL_KNOWLEDGE = {
         "xray_findings": ["Bilateral perihilar opacity", "Kerley B lines", "Pleural effusions", "Vascular redistribution to upper lobes"],
         "clinical_significance": "Indicates heart failure, fluid overload, ARDS, or renal failure",
         "action_steps": ["Administer diuretics if cardiac origin", "Assess volume status", "Monitor oxygen saturation"],
-        "citations": ["Ware LB, Matthay MA. Acute pulmonary edema. N Engl J Med. 2005;353(26):2788-2792"]
+        "citations": ["Ware LB, Matthay MA. Acute pulmonary edema. N Engl J Med. 2005;353(26):2788-2796"]
     },
     "Enlarged Cardiomediastinum": {
         "definition": "Widening of the mediastinal silhouette beyond normal limits",
@@ -247,93 +247,115 @@ class ReportResponse(BaseModel):
     findings_count: int
     timestamp: str
 
-def generate_professional_report(patient_data, ml_predictions, top_n=5):
-    """Generate hospital-grade report"""
-    from datetime import datetime
-
+def generate_medical_report(patient_data, ml_predictions, top_n=3):
+    """Generate a clean, doctor-style medical report"""
     sorted_predictions = sorted(ml_predictions, key=lambda x: x['confidence'], reverse=True)
     top_predictions = sorted_predictions[:top_n]
+    
+    report_sections = []
+    all_citations = []
+    
+    # Header
+    header = f"""RADIOLOGY REPORT - CHEST X-RAY
 
-    report = "=" * 80 + "\n"
-    report += " " * 20 + "DEPARTMENT OF RADIOLOGY\n"
-    report += " " * 15 + "CHEST RADIOGRAPH DIAGNOSTIC REPORT\n"
-    report += "=" * 80 + "\n\n"
+Patient Name: {patient_data['name']}
+Patient ID: {patient_data['patient_id']}
+Age: {patient_data['age']} years
+Gender: {patient_data['gender']}
+Examination Date: {datetime.now().strftime('%B %d, %Y')}
+Examination Type: Chest Radiograph (PA/Lateral)
 
-    # Patient Info
-    report += "PATIENT INFORMATION\n"
-    report += "━" * 80 + "\n"
-    report += f"Name           : {patient_data['name']}\n"
-    report += f"Patient ID     : {patient_data['patient_id']}\n"
-    report += f"Age/Gender     : {patient_data['age']} years / {patient_data['gender']}\n"
-    report += f"Examination    : Chest X-Ray (PA/Lateral)\n"
-    report += f"Date           : {datetime.now().strftime('%B %d, %Y')}\n"
-    report += "Physician      : [To be filled]\n\n"
-
-    # AI Analysis
-    report += "AI-ASSISTED ANALYSIS\n"
-    report += "━" * 80 + "\n"
-    report += "Multi-Model Ensemble: DenseNet121 (60%) + ResNet50 (25%) + EfficientNet (15%)\n\n"
-
-    # Findings
-    report += "FINDINGS\n"
-    report += "━" * 80 + "\n\n"
-
+"""
+    report_sections.append(header)
+    
+    # Clinical Findings
+    findings_section = "FINDINGS:\n\n"
+    
     if not top_predictions or all(p['confidence'] < 0.3 for p in top_predictions):
-        report += "LUNGS:\n  • Clear lung fields bilaterally\n\n"
-        report += "HEART: \n  • Cardiac silhouette within normal limits\n\n"
+        findings_section += "The chest radiograph demonstrates clear lung fields bilaterally with no acute cardiopulmonary abnormality. "
+        findings_section += "Cardiac silhouette is within normal limits. Mediastinal contours are unremarkable.\n\n"
     else:
-        report += "LUNGS:\n"
-        for idx, pred in enumerate([p for p in top_predictions if p['confidence'] >= 0.3], 1):
-            knowledge = get_pathology_info(pred['disease'])
-            if knowledge:
-                report += f"  {idx}. {knowledge['xray_findings'][0]} consistent with {pred['disease'].lower()}\n"
-                report += f"     Confidence: {pred['confidence']*100:.1f}% | Agreement: {pred.get('agreement', 1.0)*100:.1f}%\n"
-        report += "\n"
-
+        for idx, pred in enumerate(top_predictions, 1):
+            pathology = pred['disease']
+            confidence = pred['confidence']
+            severity = pred['severity']
+            
+            knowledge = get_pathology_info(pathology)
+            
+            if knowledge and confidence > 0.3:
+                findings_section += f"{idx}. "
+                primary_finding = knowledge['xray_findings'][0]
+                findings_section += f"{primary_finding}. "
+                findings_section += f"This is consistent with {pathology.lower()}. "
+                
+                if confidence > 0.7:
+                    findings_section += "High confidence finding.\n\n"
+                elif confidence > 0.5:
+                    findings_section += "Moderate confidence finding.\n\n"
+                else:
+                    findings_section += "Low confidence finding, correlation with clinical symptoms recommended.\n\n"
+                
+                all_citations.extend(knowledge['citations'])
+    
+    report_sections.append(findings_section)
+    
     # Impression
-    report += "IMPRESSION\n"
-    report += "━" * 80 + "\n"
+    impression_section = "IMPRESSION:\n\n"
+    
     if not top_predictions or all(p['confidence'] < 0.3 for p in top_predictions):
-        report += "1. No acute cardiopulmonary disease\n\n"
+        impression_section += "No acute cardiopulmonary disease.\n\n"
     else:
-        for idx, pred in enumerate([p for p in top_predictions if p['confidence'] >= 0.3], 1):
-            knowledge = get_pathology_info(pred['disease'])
+        significant_findings = [p for p in top_predictions if p['confidence'] > 0.3]
+        
+        for pred in significant_findings:
+            pathology = pred['disease']
+            knowledge = get_pathology_info(pathology)
+            
             if knowledge:
-                report += f"{idx}. {pred['disease']}: {knowledge['clinical_significance']}\n"
-        report += "\n"
-
+                impression_section += f"- {pathology}: {knowledge['clinical_significance']}\n"
+        
+        impression_section += "\n"
+    
+    report_sections.append(impression_section)
+    
     # Recommendations
-    report += "RECOMMENDATIONS\n"
-    report += "━" * 80 + "\n"
+    recommendations_section = "RECOMMENDED ACTIONS:\n\n"
+    
     if not top_predictions or all(p['confidence'] < 0.3 for p in top_predictions):
-        report += "• No immediate action required\n\n"
+        recommendations_section += "- No immediate action required\n"
+        recommendations_section += "- Routine follow-up as clinically indicated\n\n"
     else:
-        recs = set()
-        for pred in [p for p in top_predictions if p['confidence'] >= 0.3]:
-            knowledge = get_pathology_info(pred['disease'])
-            if knowledge:
-                recs.update(knowledge['action_steps'][:2])
-        for idx, rec in enumerate(sorted(recs), 1):
-            report += f"{idx}. {rec}\n"
-        report += "\n"
-
+        action_steps = set()
+        
+        for pred in top_predictions:
+            if pred['confidence'] > 0.3:
+                knowledge = get_pathology_info(pred['disease'])
+                if knowledge:
+                    for step in knowledge['action_steps'][:2]:
+                        action_steps.add(step)
+        
+        for idx, step in enumerate(action_steps, 1):
+            recommendations_section += f"{idx}. {step}\n"
+        
+        recommendations_section += "\n"
+    
+    report_sections.append(recommendations_section)
+    
     # Footer
-    report += "=" * 80 + "\n"
-    report += "Report generated by RAD-ETHIX Multi-Model AI System\n"
-    report += "⚠️  Requires licensed radiologist review before clinical use\n"
-    report += "=" * 80 + "\n\n"
-    report += "Radiologist Signature: ________________________  Date: ______________\n"
-
-    citations = []
-    for pred in [p for p in top_predictions if p['confidence'] >= 0.3]:
-        knowledge = get_pathology_info(pred['disease'])
-        if knowledge and 'citations' in knowledge:
-            citations.extend(knowledge['citations'])
-
+    footer = """---
+Report generated by RAD-ETHIX AI-Assisted Diagnostic System
+This report should be reviewed by a licensed radiologist before clinical use
+AI Confidence scores and findings are supplementary to clinical judgment
+"""
+    report_sections.append(footer)
+    
+    final_report = "".join(report_sections)
+    unique_citations = list(dict.fromkeys(all_citations))
+    
     return {
-        'report_text': report,
-        'citations': list(dict.fromkeys(citations))[:5],
-        'findings_count': len([p for p in top_predictions if p['confidence'] >= 0.3]),
+        'report_text': final_report,
+        'citations': unique_citations,
+        'findings_count': len([p for p in top_predictions if p['confidence'] > 0.3]),
         'timestamp': datetime.now().isoformat()
     }
 
@@ -347,7 +369,7 @@ async def generate_report(request: ReportRequest):
             "age": request.age,
             "gender": request.gender
         }
-
+        
         ml_predictions = [
             {
                 "disease": p.disease,
@@ -356,10 +378,10 @@ async def generate_report(request: ReportRequest):
             }
             for p in request.predictions
         ]
-
-        report_data = generate_professional_report(patient_data, ml_predictions)
+        
+        report_data = generate_medical_report(patient_data, ml_predictions)
         return report_data
-
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -375,51 +397,6 @@ DOCTOR_REVIEW_THRESHOLD = 0.6
 
 model = None
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-ensemble_model = None
-
-class MultiModelEnsemble:
-    """Weighted ensemble of 3 models"""
-    def __init__(self, device='cpu'):
-        self.device = device
-        self.weights = {'densenet121': 0.60, 'resnet50': 0.25, 'efficientnet': 0.15}
-        self.models = {}
-
-        logger.info("📦 Loading DenseNet121...")
-        self.models['densenet121'] = xrv.models.DenseNet(weights="densenet121-res224-chex")
-        self.models['densenet121'].to(device).eval()
-
-        logger.info("📦 Loading ResNet50...")
-        self.models['resnet50'] = xrv.models.ResNet(weights="resnet50-res512-all")
-        self.models['resnet50'].to(device).eval()
-
-        logger.info("📦 Loading EfficientNet...")
-        # You had DenseNet weights used for efficientnet placeholder earlier; keeping that consistent, but you may want to replace with correct efficientnet weights if available.
-        self.models['efficientnet'] = xrv.models.DenseNet(weights="densenet121-res224-all")
-        self.models['efficientnet'].to(device).eval()
-
-    def predict(self, img_tensor):
-        individual_preds = {}
-        with torch.no_grad():
-            for model_name, model in self.models.items():
-                output = model(img_tensor)
-                probs = torch.sigmoid(output).cpu().numpy()[0]
-                individual_preds[model_name] = probs
-
-        # Weighted ensemble
-        weighted_preds = np.zeros_like(individual_preds['densenet121'])
-        for model_name, probs in individual_preds.items():
-            weighted_preds += probs * self.weights[model_name]
-
-        # Agreement scores
-        pred_matrix = np.array([preds for preds in individual_preds.values()])
-        std_devs = np.std(pred_matrix, axis=0)
-        agreement_scores = np.exp(-std_devs * 2)
-
-        return {
-            'ensemble_predictions': weighted_preds,
-            'individual_predictions': individual_preds,
-            'agreement_scores': agreement_scores
-        }
 
 DISEASE_DESCRIPTIONS = {
     'Atelectasis': 'Collapse or closure of lung tissue resulting in reduced gas exchange',
@@ -453,67 +430,31 @@ class TorchXRayVisionGradCAM:
     def hook_layers(self):
         def forward_hook(module, input, output):
             self.activations = output
-
         def backward_hook(module, grad_input, grad_output):
             self.gradients = grad_output[0]
-
-        # Find target layer - handle different model types
-        target_layer = None
-
-        if hasattr(self.model, 'features'):
-            # DenseNet models
-            if hasattr(self.model.features, 'norm5'):
-                target_layer = self.model.features.norm5
-        elif hasattr(self.model, 'model'):
-            # ResNet models wrapped in xrv
-            if hasattr(self.model.model, 'layer4'):
-                target_layer = self.model.model.layer4[-1]
-
-        # Fallback - get last convolutional layer
-        if target_layer is None:
-            for module in reversed(list(self.model.modules())):
-                if isinstance(module, torch.nn.Conv2d):
-                    target_layer = module
-                    break
-
-        if target_layer is not None:
-            target_layer.register_forward_hook(forward_hook)
-            # register_backward_hook is deprecated in newer PyTorch; this is kept for compatibility.
-            try:
-                target_layer.register_backward_hook(backward_hook)
-            except Exception:
-                # Fallback: try register_full_backward_hook if available
-                try:
-                    target_layer.register_full_backward_hook(lambda module, grad_input, grad_output: backward_hook(module, grad_input, grad_output))
-                except Exception:
-                    logger.warning("Could not register backward hook on target layer")
-
+        if hasattr(self.model, 'features') and hasattr(self.model.features, 'norm5'):
+            target_layer = self.model.features.norm5
+        elif hasattr(self.model, 'densenet121') and hasattr(self.model.densenet121.features, 'norm5'):
+            target_layer = self.model.densenet121.features.norm5
         else:
-            logger.warning("Could not find target layer for Grad-CAM")
+            target_layer = list(self.model.modules())[-3]
+        target_layer.register_forward_hook(forward_hook)
+        target_layer.register_backward_hook(backward_hook)
 
     def generate_cam(self, input_tensor, class_idx):
         self.model.eval()
         output = self.model(input_tensor)
-
-        if output.dim() == 1:
-            output = output.unsqueeze(0)
-
         self.model.zero_grad()
         class_score = output[0, class_idx]
         class_score.backward(retain_graph=True)
-
         if self.gradients is None or self.activations is None:
-            logger.warning("Gradients/activations not captured, returning zero CAM")
             return np.zeros((224, 224))
-
         weights = torch.mean(self.gradients, dim=[2, 3], keepdim=True)
         cam = torch.sum(weights * self.activations, dim=1).squeeze(0)
-        cam = torch.nn.functional.relu(cam)
+        cam = F.relu(cam)
         cam = cam.detach().cpu().numpy()
-
         if cam.max() > 0:
             cam = cam / cam.max()
-
         return cam
 
 def create_heatmap_overlay(original_image, heatmap, alpha=0.4):
@@ -521,7 +462,7 @@ def create_heatmap_overlay(original_image, heatmap, alpha=0.4):
     h, w = original_image.shape[:2]
     heatmap_resized = cv2.resize(heatmap, (w, h))
     heatmap_colored = cv2.applyColorMap(
-        (heatmap_resized * 255).astype(np.uint8),
+        (heatmap_resized * 255).astype(np.uint8), 
         cv2.COLORMAP_JET
     )
     overlay = cv2.addWeighted(original_image, 1-alpha, heatmap_colored, alpha, 0)
@@ -542,13 +483,18 @@ def preprocess_xray_image(image_bytes):
 
 @app.on_event("startup")
 async def startup_event():
-    global ensemble_model
-    logger.info("🚀 Starting RAD-ETHIX Multi-Model Ensemble...")
+    global model
+    logger.info("🚀 Starting RAD-ETHIX with TorchXRayVision...")
+    logger.info(f"Device: {device}")
     try:
-        ensemble_model = MultiModelEnsemble(device=device)
-        logger.info("✅ Ensemble loaded!")
+        logger.info("📦 Loading DenseNet121 trained on CheXpert...")
+        model = xrv.models.get_model("densenet121-res224-chex")
+        model.to(device)
+        model.eval()
+        logger.info("✅ TorchXRayVision model loaded successfully!")
+        logger.info(f"Model supports {len(xrv.datasets.default_pathologies)} pathologies")
     except Exception as e:
-        logger.error(f"❌ Failed: {e}")
+        logger.error(f"❌ Failed to load model: {e}")
         raise e
 
 @app.get("/", response_class=HTMLResponse)
@@ -608,31 +554,20 @@ async def get_diseases():
 
 @app.post("/predict")
 async def predict_chest_xray(file: UploadFile = File(...)):
-    if not ensemble_model:
+    if not model:
         raise HTTPException(status_code=503, detail="Model not loaded")
-
     if not file.content_type.startswith('image/'):
         raise HTTPException(status_code=400, detail="Please upload an image file")
-
     try:
         logger.info(f"🔬 Analyzing X-ray: {file.filename}")
-
         contents = await file.read()
         processed_img, original_img = preprocess_xray_image(contents)
         img_tensor = torch.from_numpy(processed_img).unsqueeze(0).to(device)
         img_tensor.requires_grad_(True)
-
-        # Ensemble prediction
-        ensemble_results = ensemble_model.predict(img_tensor)
-        probabilities = ensemble_results['ensemble_predictions']
-        agreement_scores = ensemble_results['agreement_scores']
-        individual_preds = ensemble_results['individual_predictions']
-
-        # Primary model for reference
-        primary_model = ensemble_model.models['densenet121']
-        grad_cam = TorchXRayVisionGradCAM(primary_model)
-
-        # Disease findings
+        with torch.no_grad():
+            predictions = model(img_tensor).cpu().numpy()[0]
+        probabilities = torch.sigmoid(torch.from_numpy(predictions)).numpy()
+        grad_cam = TorchXRayVisionGradCAM(model)
         findings = []
         for i, disease in enumerate(xrv.datasets.default_pathologies):
             confidence = float(probabilities[i])
@@ -651,97 +586,42 @@ async def predict_chest_xray(file: UploadFile = File(...)):
                         severity = "Moderate"
                     else:
                         severity = "Low"
-
                 finding = {
                     "disease": disease,
                     "confidence": confidence,
-                    "agreement": float(agreement_scores[i]),
                     "severity": severity,
                     "description": DISEASE_DESCRIPTIONS.get(disease, f"Medical condition: {disease}"),
-                    "critical": (disease == "Pneumonia" and severity == "Critical"),
-                    "model_breakdown": {
-                        "densenet121": float(individual_preds['densenet121'][i]),
-                        "resnet50": float(individual_preds['resnet50'][i]),
-                        "efficientnet": float(individual_preds['efficientnet'][i])
-                    }
+                    "critical": (disease == "Pneumonia" and severity == "Critical")
                 }
                 findings.append(finding)
-
         sorted_findings = sorted(findings, key=lambda x: x["confidence"], reverse=True)
-        result_findings = sorted_findings[:5]
-
+        result_findings = sorted_findings[:3]
         pneumonia_critical = next(
             (f for f in findings if f["disease"] == "Pneumonia" and f["severity"] == "Critical"),
             None
         )
         if pneumonia_critical and all(f["disease"] != "Pneumonia" for f in result_findings):
             result_findings.append(pneumonia_critical)
-
-        # === Grad-CAM for all models ===
-        gradcam_results = {}
-        common_shape = (224, 224)
-        all_cams = []
-        weights = getattr(ensemble_model, 'weights', {'densenet121': 0.6, 'resnet50': 0.25, 'efficientnet': 0.15})
-        max_idx = int(np.argmax(probabilities))
-
-        for model_name, model in ensemble_model.models.items():
-            try:
-                grad_cam_temp = TorchXRayVisionGradCAM(model)
-                cam = grad_cam_temp.generate_cam(img_tensor, max_idx)
-
-                if not isinstance(cam, np.ndarray):
-                    cam = np.array(cam)
-
-                cam_resized = cv2.resize(cam, common_shape, interpolation=cv2.INTER_LINEAR)
-                if cam_resized.max() > 0:
-                    cam_resized = cam_resized / cam_resized.max()
-
-                all_cams.append(cam_resized * float(weights.get(model_name, 0.0)))
-
-                # Overlay per model
-                img_resized = cv2.resize(original_img, (common_shape[1], common_shape[0]))
-                if len(img_resized.shape) == 3:
-                    img_gray = cv2.cvtColor(img_resized, cv2.COLOR_RGB2GRAY)
-                    img_overlay = cv2.cvtColor(img_gray, cv2.COLOR_GRAY2RGB)
-                else:
-                    img_overlay = cv2.cvtColor(img_resized, cv2.COLOR_GRAY2RGB)
-
-                overlay = create_heatmap_overlay(img_overlay, cam_resized)
-                _, buffer = cv2.imencode('.png', overlay)
-                gradcam_results[model_name] = base64.b64encode(buffer).decode()
-
-            except Exception as e:
-                logger.warning(f"⚠️ Failed to generate CAM for {model_name}: {e}")
-                gradcam_results[model_name] = None
-
-        # === Combined Ensemble CAM ===
         combined_heatmap_b64 = None
-        try:
-            if all_cams:
-                combined_cam = np.sum(all_cams, axis=0)
-                if combined_cam.max() > 0:
-                    combined_cam = combined_cam / combined_cam.max()
-
-                img_resized = cv2.resize(original_img, (common_shape[1], common_shape[0]))
+        if result_findings:
+            try:
+                max_idx = np.argmax(probabilities)
+                combined_cam = grad_cam.generate_cam(img_tensor, max_idx)
+                img_resized = cv2.resize(original_img, (224, 224))
                 if len(img_resized.shape) == 3:
                     img_gray = cv2.cvtColor(img_resized, cv2.COLOR_RGB2GRAY)
                     img_overlay = cv2.cvtColor(img_gray, cv2.COLOR_GRAY2RGB)
                 else:
                     img_overlay = cv2.cvtColor(img_resized, cv2.COLOR_GRAY2RGB)
-
                 combined_overlay = create_heatmap_overlay(img_overlay, combined_cam)
                 _, buffer = cv2.imencode('.png', combined_overlay)
                 combined_heatmap_b64 = base64.b64encode(buffer).decode()
-        except Exception as e:
-            logger.warning(f"Failed to generate combined Grad-CAM: {e}")
-
-        # === Confidence metrics ===
+            except Exception as e:
+                logger.warning(f"Failed to generate combined heatmap: {e}")
         overall_confidence = float(np.max(probabilities))
         needs_review = overall_confidence < DOCTOR_REVIEW_THRESHOLD or len(result_findings) > 2
         ai_report = generate_clinical_report(result_findings, overall_confidence)
         patient_report = generate_patient_report(result_findings)
-
-        # === Final response ===
         response = {
             "status": "success",
             "timestamp": str(pd.Timestamp.now()),
@@ -751,17 +631,15 @@ async def predict_chest_xray(file: UploadFile = File(...)):
                 "average_confidence": float(np.mean([f["confidence"] for f in result_findings])) if result_findings else 0.0,
                 "uncertainty": 1.0 - overall_confidence
             },
-            "gradcams": gradcam_results,  # individual model CAMs
-            "combined_heatmap": combined_heatmap_b64,  # ensemble CAM
+            "combined_heatmap": combined_heatmap_b64,
             "ai_report": ai_report,
             "patient_report": patient_report,
             "needs_doctor_review": needs_review,
             "review_reason": "Low confidence" if overall_confidence < DOCTOR_REVIEW_THRESHOLD else "Multiple findings" if len(result_findings) > 2 else "Standard review",
             "model_info": {
-                "name": "TorchXRayVision Ensemble",
+                "name": "TorchXRayVision DenseNet121",
                 "training_dataset": "CheXpert",
                 "paper": "https://arxiv.org/abs/2111.00595",
-                "models_used": list(ensemble_model.models.keys()),
                 "pathologies_supported": len(xrv.datasets.default_pathologies)
             },
             "metadata": {
@@ -772,10 +650,8 @@ async def predict_chest_xray(file: UploadFile = File(...)):
                 "detection_threshold": POSITIVE_THRESHOLD
             }
         }
-
         logger.info(f"✅ Analysis complete: {len(result_findings)} findings detected")
         return response
-
     except Exception as e:
         logger.error(f"❌ Prediction failed: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -828,9 +704,9 @@ if __name__ == "__main__":
     import uvicorn
     logger.info("🚀 Starting RAD-ETHIX API server...")
     uvicorn.run(
-        "main:app",
-        host="127.0.0.1",
-        port=8000,
+        "main:app", 
+        host="127.0.0.1", 
+        port=8000, 
         reload=True,
         log_level="info"
     )
