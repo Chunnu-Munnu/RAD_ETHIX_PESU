@@ -3,7 +3,7 @@
 > ⚡ Empowering **ethical, transparent, and accessible AI radiology** with real-time explainability.  
 
 RAD-ETHIX is a full-stack AI platform for automated **chest X-ray diagnosis** that prioritizes **trust, transparency, and accessibility**.  
-Built with **DenseNet121 + Grad-CAM**, it detects **18 thoracic pathologies** while generating **visual explanations** for every prediction.  
+Built with **DenseNet121 + Resnet + EfficientNet Ensemble+ Grad-CAM + Report Generation using RAG pipeline having medical literature**, it detects **18 thoracic pathologies** while generating **visual explanations** for every prediction.  
 
 ---
 
